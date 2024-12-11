@@ -97,6 +97,9 @@ struct editorConfig E;
 char *C_HL_extensions[] = { ".c", ".h", ".cpp", NULL };
 char *C_HL_keywords[] = { "#define", "#include",  "switch", "if", "while", "for", "break", "continue", "return", "else", "struct", "union", "typedef", "static", "enum", "class", "case", "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|", "void|", NULL };
 
+char *MD_HL_extensions[] = { ".md", NULL };
+char *MD_HL_keywords[] = { "#","##", "###", "---", ">|", "-|" };
+
 struct editorSyntax HLDB[] = {
     {
         "C++",
@@ -104,7 +107,14 @@ struct editorSyntax HLDB[] = {
 		C_HL_keywords,
 		"//", "/*", "*/",
         HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
-    }
+    },
+	{
+		"Markdown",
+		MD_HL_extensions,
+		MD_HL_keywords,
+		NULL, NULL, NULL,
+		HL_HIGHLIGHT_STRINGS
+	}
 };
 
 #define HLDB_ENTRIES (sizeof(HLDB) / sizeof(HLDB[0]))
