@@ -1,4 +1,4 @@
-/* Includes */
+/*Includes */
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE
 #define _GNU_SOURCE
@@ -23,6 +23,7 @@
 #define ZAP_AUTHOR "Max Schaefer"
 #define ZAP_TAB_STOP 4
 #define ZAP_QUIT_TIMES 3
+#define ZAP_LINE_NUMBERS 1
 
 enum editorKey {
     BACKSPACE = 127,
@@ -94,11 +95,11 @@ struct editorConfig E;
 
 /* filetypes */
 char *C_HL_extensions[] = { ".c", ".h", ".cpp", NULL };
-char *C_HL_keywords[] = { "switch", "if", "while", "for", "break", "continue", "return", "else", "struct", "union", "typedef", "static", "enum", "class", "case", "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|", "void|", NULL };
+char *C_HL_keywords[] = { "#define", "#include",  "switch", "if", "while", "for", "break", "continue", "return", "else", "struct", "union", "typedef", "static", "enum", "class", "case", "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|", "void|", NULL };
 
 struct editorSyntax HLDB[] = {
     {
-        "c",
+        "C++",
         C_HL_extensions,
 		C_HL_keywords,
 		"//", "/*", "*/",
@@ -354,7 +355,7 @@ int editorSyntaxToColor(int hl) {
 		case HL_KEYWORD1: return 94;
 		case HL_KEYWORD2: return 32;
 		case HL_STRING: return 35;
-        case HL_MATCH: return 45;
+        case HL_MATCH: return 44;
         default: return 37;
     }
 }
@@ -585,7 +586,7 @@ void editorOpen(char *filename) {
 
 void editorSave() {
     if(E.filename == NULL) {
-        E.filename = editorPrompt("Save as: " MAGENTA "%s" RESET, NULL);
+        E.filename = editorPrompt("Save as: " BRIGHT_BLUE "%s" RESET, NULL);
         if(E.filename == NULL) {
             editorSetStatusMessage(BRIGHT_RED "Save aborted!");
             return;
@@ -731,6 +732,8 @@ void editorScroll() {
 
 void editorDrawRows(struct abuf *ab) {
     int y;
+	int line_number_width = snprintf(NULL, 0, "%d", E.numrows) + 1; // Calculate max width
+
     for(y = 0; y < E.screenrows; ++y) {
         int filerow = y + E.rowoff;
         if(filerow >= E.numrows) {
@@ -742,7 +745,7 @@ void editorDrawRows(struct abuf *ab) {
                     
                     int padding = (E.screencols - welcomelen) / 2;
                     if(padding) {
-                        abAppend(ab, MAGENTA "~" RESET, strlen(MAGENTA "~" RESET));
+                        abAppend(ab, BRIGHT_BLUE "~" RESET, strlen(BRIGHT_BLUE "~" RESET));
                         padding--;
                     }
 
@@ -754,14 +757,14 @@ void editorDrawRows(struct abuf *ab) {
 
                     int padding = (E.screencols - infolen) / 2;
                     if(padding)  {
-                        abAppend(ab, MAGENTA "~" RESET, strlen(MAGENTA "~" RESET));
+                        abAppend(ab, BRIGHT_BLUE "~" RESET, strlen(BRIGHT_BLUE "~" RESET));
                         padding--;
                     }
 
                     while(padding--) abAppend(ab, " ", 1);
                     abAppend(ab, info, infolen);
                 } else {
-                    abAppend(ab, MAGENTA "~" RESET, strlen(MAGENTA "~" RESET));
+                    abAppend(ab, BRIGHT_BLUE "~" RESET, strlen(BRIGHT_BLUE "~" RESET));
                 }
             }
         } else {
@@ -771,7 +774,16 @@ void editorDrawRows(struct abuf *ab) {
             char *c = &E.row[filerow].render[E.coloff];
             unsigned char *hl = &E.row[filerow].hl[E.coloff];
             int currentColor = -1;
-            int j;
+   			
+            if(ZAP_LINE_NUMBERS) {
+                char lineNum[16];
+                int lineLen = snprintf(lineNum, sizeof(lineNum), "%*d ", line_number_width, filerow + 1);
+                abAppend(ab, BRIGHT_RED, 6);
+                abAppend(ab, lineNum, lineLen);
+                abAppend(ab, RESET, 4);			
+            }
+						         
+			int j;
             for(j = 0; j < len; ++j) {
 				if(iscntrl(c[j])) {
 					char sym = (c[j] <= 26) ? '@' + c[j] : '?';
@@ -809,7 +821,7 @@ void editorDrawRows(struct abuf *ab) {
 }
 
 void editorDrawStatusBar(struct abuf *ab) {
-    abAppend(ab, "\x1b[1;45m", 7);
+    abAppend(ab, "\x1b[1;44m", 7);
 
     char status[80], rstatus[80];
     int len = snprintf(status, sizeof(status), "ZapEditor: %s - %d %s %s", E.filename ? E.filename : "[No Name]", E.numrows, E.numrows > 1 ? "lines" : "line", E.dirty ? "(modified)" : "");
@@ -850,8 +862,10 @@ void editorRefreshScreen() {
     editorDrawStatusBar(&ab);
     editorDrawMessageBar(&ab);
 
+    
+    int line_number_width = snprintf(NULL, 0, "%d ", E.numrows) + 1;
     char buf[32];
-    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1, (E.rx + E.coloff) + 1);
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1, (E.rx + (ZAP_LINE_NUMBERS ? line_number_width : 0) + E.coloff) + 1);
     abAppend(&ab, buf, strlen(buf));
 
     abAppend(&ab, "\x1b[?25h", 6);
@@ -909,10 +923,11 @@ void *editorPrompt(char *prompt, void (*callback)(char *, int)) {
 
 void editorMoveCursor(int key) {
     erow *row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
+    int line_number_width = snprintf(NULL, 0, "%d ", E.numrows) + 1;
 
     switch (key) {
         case ARROW_LEFT:
-            if(E.cx != 0) {
+            if(ZAP_LINE_NUMBERS ? (E.cx > line_number_width) : (E.cx > 0)) {
                 E.cx--;
             } else if(E.cy > 0) {
                 E.cy--;
@@ -920,11 +935,11 @@ void editorMoveCursor(int key) {
             };
             break;
         case ARROW_RIGHT:
-                if(row && E.cx < row->size) {
+                if(row && E.cx < row->size + (ZAP_LINE_NUMBERS ? line_number_width : 0)) {
                     E.cx++;
-                } else if(row && E.cx == row->size) {
+                } else if(row && E.cx == row->size + (ZAP_LINE_NUMBERS ? line_number_width : 0)) {
                     E.cy++;
-                    E.cx = 0;
+                    E.cx = (ZAP_LINE_NUMBERS ? line_number_width : 0);
                 }
             break;
         case ARROW_UP:
@@ -937,8 +952,8 @@ void editorMoveCursor(int key) {
 
     row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
     int rowlen = row ? row->size : 0;
-    if(E.cx > rowlen) {
-        E.cx = rowlen;
+    if(E.cx > rowlen + (ZAP_LINE_NUMBERS ? line_number_width : 0)) {
+        E.cx = rowlen + (ZAP_LINE_NUMBERS ? line_number_width : 0);
     }
 }
 
