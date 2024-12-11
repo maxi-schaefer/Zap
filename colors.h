@@ -1,5 +1,3 @@
-#pragma region
-
 #define BLACK "\x1b[30m"
 #define GRAY "\x1b[90m"
 #define BRIGHT_RED "\x1b[91m"
@@ -13,5 +11,3 @@
 #define CYAN "\x1b[36m"
 #define WHITE "\x1b[37m"
 #define RESET "\x1b[0m"
-
-#pragma endregion
