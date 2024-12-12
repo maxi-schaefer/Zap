@@ -23,7 +23,7 @@
 #define ZAP_AUTHOR "Max Schaefer"
 #define ZAP_TAB_STOP 4
 #define ZAP_QUIT_TIMES 3
-#define ZAP_LINE_NUMBERS 1
+#define ZAP_LINE_NUMBERS 0
 
 enum editorKey {
     BACKSPACE = 127,
@@ -53,7 +53,7 @@ enum editorHighlight {
 #define HL_HIGHLIGHT_STRINGS (1<<1)
 
 /* data */
-typedef struct erow {
+typedef struct   erow {
 	int idx;
     int size;
     int rsize;
@@ -98,7 +98,7 @@ char *C_HL_extensions[] = { ".c", ".h", ".cpp", NULL };
 char *C_HL_keywords[] = { "#define", "#include",  "switch", "if", "while", "for", "break", "continue", "return", "else", "struct", "union", "typedef", "static", "enum", "class", "case", "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|", "void|", NULL };
 
 char *MD_HL_extensions[] = { ".md", NULL };
-char *MD_HL_keywords[] = { "#","##", "###", "---", ">|", "-|" };
+char *MD_HL_keywords[] = { "#|","##|", "###|", "`", ">|", "-|" };
 
 struct editorSyntax HLDB[] = {
     {
@@ -521,6 +521,32 @@ void editorInsertChar(int c) {
     E.cx++;
 }
 
+int editorCalculateIndentation(int filerow) {
+    if(filerow <= 0 || filerow >= E.numrows) return 0;
+
+    erow *row = &E.row[filerow - 1];
+    int indent = 0;
+
+    for(int i = 0; i < row->size; ++i) {
+        if(row->chars[i] == ' ') {
+            indent++;
+        } else if(row->chars[i] == '\t') {
+            indent += ZAP_TAB_STOP;
+        } else {
+            break;
+        }
+    }
+
+    if(row->size > 0) {
+        char last_char = row->chars[row->size - 1];
+        if(last_char == '{' || last_char == '(' || last_char == ':') {
+            indent += ZAP_TAB_STOP;
+        }
+    }
+
+    return indent;
+}
+
 void editorInsertNewline() {
     if(E.cx == 0) {
         editorInsertRow(E.cy, "", 0);
@@ -532,8 +558,23 @@ void editorInsertNewline() {
         row->chars[row->size] = '\0';
         editorUpdateRow(row);
     }
+
+    if(E.cy + 1 >= E.numrows) {
+        editorInsertRow(E.cy + 1, "", 0);
+    }
+
+    int indent = editorCalculateIndentation(E.cy + 1);
+    if(indent > 0) {
+        char *indentation = malloc(indent + 1);
+        memset(indentation, ' ', indent);
+        indentation[indent] = '\0';
+        editorRowAppendString(&E.row[E.cy + 1], indentation, indent);
+        free(indentation);
+    } 
+
+    E.cx = indent;
     E.cy++;
-    E.cx = 0;
+    E.dirty++;
 }
 
 void editorDelChar() {
