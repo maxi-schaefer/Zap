@@ -23,7 +23,7 @@
 #define ZAP_AUTHOR "Max Schaefer"
 #define ZAP_TAB_STOP 4
 #define ZAP_QUIT_TIMES 3
-#define ZAP_LINE_NUMBERS 0
+#define ZAP_LINE_NUMBERS 1
 
 enum editorKey {
     BACKSPACE = 127,
@@ -100,6 +100,24 @@ char *C_HL_keywords[] = { "#define", "#include",  "switch", "if", "while", "for"
 char *MD_HL_extensions[] = { ".md", NULL };
 char *MD_HL_keywords[] = { "#|","##|", "###|", "`", ">|", "-|" };
 
+char *HTML_HL_extensions[] = { ".html", ".htm", ".xhtml", NULL };
+char *HTML_HL_keywords[] = {
+    // Tags
+    "html", "head", "body", "title", "meta", "link", "style", "script", "div", "span", "h1", "h2", "h3", "h4", "h5", "h6",
+    "p", "a", "ul", "ol", "li", "table", "tr", "td", "th", "thead", "tbody", "footer", "header", "section", "article", "aside",
+    "nav", "form", "input", "textarea", "button", "select", "option", "label", "img", "iframe", "canvas", "svg", "video", "audio",
+    // Attributes
+    "id|", "class|", "src|", "href|", "alt|", "title|", "style|", "width|", "height|", "type|", "rel|", "target|", "name|", "value|",
+    "placeholder|", "checked|", "disabled|", "readonly|", "required|", "multiple|", "method|", "action|", "enctype|", "charset|",
+    "async|", "defer|", "autoplay|", "controls|", "loop|", "muted|", "poster|", "preload|", "crossorigin|",
+    // Entities
+    "&lt;", "&gt;", "&amp;", "&quot;", "&apos;", "&nbsp;", "&copy;", "&reg;", "&euro;", "&yen;", "&pound;", "&cent;",
+    NULL
+};
+
+char *JSON_HL_extensions[] = { ".json", NULL };
+char *JSON_HL_keywords[] = { "{", "}", "[|", "]|", ":" };
+
 struct editorSyntax HLDB[] = {
     {
         "C++",
@@ -114,7 +132,21 @@ struct editorSyntax HLDB[] = {
 		MD_HL_keywords,
 		NULL, NULL, NULL,
 		HL_HIGHLIGHT_STRINGS
-	}
+	},
+    {
+        "Html",
+        HTML_HL_extensions,
+        HTML_HL_keywords,
+        "<!--", "<!--", "-->",
+        HL_HIGHLIGHT_STRINGS | HL_HIGHLIGHT_NUMBERS 
+    },
+    {
+        "Json",
+        JSON_HL_extensions,
+        JSON_HL_keywords,
+        NULL, NULL, NULL,
+        HL_HIGHLIGHT_STRINGS
+    }
 };
 
 #define HLDB_ENTRIES (sizeof(HLDB) / sizeof(HLDB[0]))
@@ -978,7 +1010,7 @@ void editorMoveCursor(int key) {
 
     switch (key) {
         case ARROW_LEFT:
-            if(ZAP_LINE_NUMBERS ? (E.cx > line_number_width) : (E.cx > 0)) {
+            if(E.cx) {
                 E.cx--;
             } else if(E.cy > 0) {
                 E.cy--;
@@ -997,7 +1029,7 @@ void editorMoveCursor(int key) {
             if(E.cy != 0) E.cy--;
             break;
         case ARROW_DOWN:
-            if(E.cy < E.numrows) E.cy++;
+            if(E.cy < E.numrows - 1) E.cy++;
             break;
     }
 
