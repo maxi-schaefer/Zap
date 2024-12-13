@@ -97,8 +97,26 @@ struct editorConfig E;
 char *C_HL_extensions[] = { ".c", ".h", ".cpp", NULL };
 char *C_HL_keywords[] = { "#define", "#include",  "switch", "if", "while", "for", "break", "continue", "return", "else", "struct", "union", "typedef", "static", "enum", "class", "case", "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|", "void|", NULL };
 
-char *MD_HL_extensions[] = { ".md", NULL };
-char *MD_HL_keywords[] = { "#|","##|", "###|", "`", ">|", "-|" };
+char *MD_HL_extensions[] = { ".md", ".markdown", NULL };
+char *MD_HL_keywords[] = {
+    // Headings
+    "#", "##", "###", "####", "#####", "######",
+    // Formatting
+    "*|", "**|", "_|", "__|", "***|", "~~|", "`|", "```|",
+    // Lists
+    "-", "*", "+",
+    // Links and Images
+    "[", "]", "(", ")", "![", "](", ")",
+    // Blockquotes
+    ">",
+    // Code blocks
+    "```", "`",
+    // Horizontal rules
+    "---", "***",
+    // Tables
+    "|",
+    NULL
+};
 
 char *HTML_HL_extensions[] = { ".html", ".htm", ".xhtml", NULL };
 char *HTML_HL_keywords[] = {

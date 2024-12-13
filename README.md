@@ -1,4 +1,6 @@
 # Zap
 A simple text editor in C with syntax highlight and search.
 
-### How to Use
+### Preview
+!["Start Screen"]("./assets/zapStart.png")
+!["Code Screen"]("./assets/zapCode.png")
